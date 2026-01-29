@@ -78,12 +78,49 @@ app.listen(PORT, () => {
 });
 
 // Get WhatsApp number by email
- app.get('/api/users/:email', (req, res) => {
+app.get('/api/users/:email', (req, res) => {
   const email = req.params.email;
   const sql = 'SELECT name, email, whatsapp FROM users WHERE email = ?';
+
   db.query(sql, [email], (err, result) => {
-    if (err) return res.status(500).json({ error: 'Internal error' });
-    if (result.length === 0) return res.status(404).json({ error: 'Not found' });
+    if (err) {
+      console.error('Error fetching user info:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     res.json(result[0]);
+  });
+});
+
+app.get('/api/admin/orders', (req, res) => {
+  const searchEmail = req.query.email; // optional search
+
+  let sql = `
+    SELECT 
+      o.id,
+      u.name,
+      u.email,
+      u.whatsapp,
+      o.title AS content_ordered,
+      o.created_at AS order_date_time
+    FROM orders o
+    JOIN users u ON o.user_email = u.email
+  `;
+
+  if (searchEmail) {
+    sql += ` WHERE u.email LIKE ?`;
+  }
+
+  sql += ` ORDER BY o.created_at DESC`;
+
+  db.query(sql, searchEmail ? [`%${searchEmail}%`] : [], (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Server error');
+    }
+    res.json(results);
   });
 });
