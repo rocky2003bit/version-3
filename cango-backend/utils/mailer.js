@@ -1,16 +1,21 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // true for 465
   auth: {
-    user: "handsomerocky3661@gmail.com",       // 👈 replace
-    pass: "oxil zwtu hbqn swlc"            // 👈 replace
+    user: "handsomerocky3661@gmail.com",
+    pass: "oxilzwtuhbqnswlc" // IMPORTANT: remove spaces in app password
+  },
+  tls: {
+    rejectUnauthorized: false // fixes "self-signed certificate" on your machine
   }
 });
 
 async function sendResetEmail(toEmail, resetLink) {
   await transporter.sendMail({
-    from: "Cango Support <YOUR_GMAIL@gmail.com>",
+    from: `"Cango Support" <handsomerocky3661@gmail.com>`,
     to: toEmail,
     subject: "Reset your Cango password",
     html: `

@@ -4,6 +4,54 @@ const userModel = require('../models/userModel');
 const crypto = require("crypto");
 const db = require("../config/db");  // your mysql2 connection
 const { sendResetEmail } = require("../utils/mailer");
+// Add to authController.js
+const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    // ✅ Validate first (BEFORE hashing)
+    if (!token || typeof token !== "string") {
+      return res.status(400).json({ message: "Reset token missing/invalid" });
+    }
+    if (!newPassword) {
+      return res.status(400).json({ message: "New password is required" });
+    }
+
+    // ✅ Hash token only after validation
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    // 1) Check token exists, unused, not expired
+    const [rows] = await db.query(
+      "SELECT email FROM password_resets WHERE token_hash = ? AND used = 0 AND expires_at > NOW()",
+      [tokenHash]
+    );
+
+    if (!rows || rows.length === 0) {
+      return res.status(400).json({ error: "Invalid or expired reset token." });
+    }
+
+    const email = rows[0].email;
+
+    // 2) Hash new password and update user
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.query("UPDATE users SET password = ? WHERE email = ?", [
+      hashedPassword,
+      email,
+    ]);
+
+    // 3) Mark token as used
+    await db.query("UPDATE password_resets SET used = 1 WHERE token_hash = ?", [
+      tokenHash,
+    ]);
+
+    return res.json({ message: "Password reset successful! You can now sign in." });
+  } catch (err) {
+    console.error("Reset Password Error:", err);
+    return res.status(500).json({ error: "Server error during password reset." });
+  }
+};
+
+
 
 
 const signup = async (req, res) => {
@@ -98,6 +146,6 @@ const forgotPassword = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-module.exports = { signup, signin, forgotPassword };
+module.exports = { signup, signin, forgotPassword, resetPassword };
 
  
