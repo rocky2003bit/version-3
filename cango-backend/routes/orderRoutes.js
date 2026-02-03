@@ -1,13 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const auth = require("../middlewares/auth");
+const requireSubscription = require("../middlewares/requireSubscription");
 
-// ✅ PLACE ORDER (must be FIRST)
-router.post('/place', async (req, res) => {
-  const { userEmail, title } = req.body;
 
-  if (!userEmail || !title) {
-    return res.status(400).json({ error: 'Missing data' });
+// ✅ PLACE ORDER (secure)
+router.post('/place', auth, requireSubscription, async (req, res) => {
+  const { title } = req.body;
+  const userEmail = req.user.email; // ✅ get from token, NOT from body
+
+  if (!title) {
+    return res.status(400).json({ error: 'Missing title' });
   }
 
   try {
@@ -22,9 +26,9 @@ router.post('/place', async (req, res) => {
   }
 });
 
-// ✅ GET USER ORDERS (must be AFTER static routes)
-router.get('/:email', async (req, res) => {
-  const userEmail = req.params.email;
+// ✅ GET USER ORDERS
+router.get("/my", auth, async (req, res) => {
+  const userEmail = req.user.email;
 
   try {
     const [orders] = await db.query(

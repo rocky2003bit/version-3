@@ -23,22 +23,59 @@
   <script>
     const form = document.getElementById('uploadForm');
     const message = document.getElementById('message');
+    const adminEmailInput = document.getElementById('adminEmail');
+    const storedAdminEmail = localStorage.getItem('adminEmail');
+
+    if (storedAdminEmail) {
+      adminEmailInput.value = storedAdminEmail;
+    }
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
+      message.textContent = '';
 
-      const data = {
-        title: document.getElementById('title').value,
-        description: document.getElementById('description').value,
-        category: document.getElementById('category').value,
-        language: document.getElementById('language').value,
-        type: document.getElementById('type').value,
-         
-      };
+      const adminEmail = adminEmailInput.value.trim();
+      const posterFile = document.getElementById('posterFile').files[0];
 
-      const adminEmail = document.getElementById('adminEmail').value;
+      if (!adminEmail) {
+        message.textContent = '❌ Admin email is required.';
+        message.style.color = 'red';
+        return;
+      }
+
+      if (!posterFile) {
+        message.textContent = '❌ Please select a poster image.';
+        message.style.color = 'red';
+        return;
+      }
 
       try {
+        // 1) Upload poster
+        const posterData = new FormData();
+        posterData.append('poster', posterFile);
+
+        const posterRes = await fetch('/api/upload/poster', {
+          method: 'POST',
+          body: posterData
+        });
+
+        const posterResult = await posterRes.json();
+        if (!posterRes.ok) {
+          message.textContent = '❌ ' + (posterResult.error || 'Poster upload failed');
+          message.style.color = 'red';
+          return;
+        }
+
+        // 2) Upload content with poster_url
+        const data = {
+          title: document.getElementById('title').value.trim(),
+          description: document.getElementById('description').value.trim(),
+          category: document.getElementById('category').value.trim(),
+          language: document.getElementById('language').value.trim(),
+          type: document.getElementById('type').value.trim(),
+          poster_url: posterResult.poster_url
+        };
+
         const response = await fetch('/api/admin/upload', {
           method: 'POST',
           headers: {
@@ -53,6 +90,7 @@
         if (response.ok) {
           message.textContent = '✅ ' + result.message;
           message.style.color = 'green';
+          form.reset();
         } else {
           message.textContent = '❌ ' + (result.error || 'Upload failed');
           message.style.color = 'red';
@@ -64,48 +102,6 @@
       }
     });
   </script>
-  <script>
-document.getElementById("contentForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
-
-  const posterFile = document.getElementById("posterFile").files[0];
-
-  // 1️⃣ Upload poster first
-  const posterData = new FormData();
-  posterData.append("poster", posterFile);
-
-  const uploadRes = await fetch("/api/upload/poster", {
-    method: "POST",
-    body: posterData
-  });
-
-  const uploadResult = await uploadRes.json();
-
-  // 2️⃣ Upload content with poster URL
-  const contentData = {
-    title: document.getElementById("title").value,
-    description: document.getElementById("description").value,
-    category: document.getElementById("category").value,
-    language: document.getElementById("language").value,
-    type: document.getElementById("type").value,
-    poster_url: uploadResult.poster_url,
-    visible: 1
-  };
-
-  const res = await fetch("/api/admin/content", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(contentData)
-  });
-
-  if (res.ok) {
-    alert("Content uploaded successfully!");
-    document.getElementById("contentForm").reset();
-  } else {
-    alert("Upload failed");
-  }
-});
-</script>
 
 </body>
 </html>

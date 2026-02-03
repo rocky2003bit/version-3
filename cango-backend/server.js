@@ -8,6 +8,8 @@ const adminRoutes = require('./routes/adminRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const orderRoutes = require('./routes/orderRoutes'); // ✅ Add this near the top
 const uploadRoutes = require("./routes/uploadRoutes");
+const subscriptionRoutes = require("./routes/subscriptionRoutes");
+
 
 dotenv.config();
 
@@ -27,6 +29,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/orders', orderRoutes); // ✅ Add this in API routes section
 app.use('/api/location', locationRoutes); // ✅ Fixed position (moved out of inner route)
+app.use("/api/subscription", subscriptionRoutes);
 
 // ✅ Default route should go LAST or REMOVE this entirely
 // If you keep it, do NOT let it override static

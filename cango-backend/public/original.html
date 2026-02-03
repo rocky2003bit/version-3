@@ -176,9 +176,38 @@
       }
     }
 
-    function orderNow(title) {
-      alert(`✅ Order placed for "${title}"`);
+    async function orderNow(title) {
+  const token = localStorage.getItem("authToken");
+
+  if (!token) {
+    // not logged in → go signin
+    window.location.href = "/signin.html";
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/orders/place", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token
+      },
+      body: JSON.stringify({ title })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Order failed");
+      return;
     }
+
+    alert("✅ Order placed!");
+  } catch (err) {
+    alert("Network error");
+  }
+}
+
   </script>
 </body>
 </html>

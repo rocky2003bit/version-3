@@ -4,6 +4,8 @@ const userModel = require('../models/userModel');
 const crypto = require("crypto");
 const db = require("../config/db");  // your mysql2 connection
 const { sendResetEmail } = require("../utils/mailer");
+const jwt = require("jsonwebtoken");
+
 // Add to authController.js
 const resetPassword = async (req, res) => {
   try {
@@ -93,19 +95,27 @@ const signin = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid email or password' });
     }
+    const token = jwt.sign(
+  { email: user.email },
+  process.env.JWT_SECRET,
+  { expiresIn: "7d" }
+);
+
 
     // ✅ Send user data back to frontend
     res.status(200).json({
-      message: 'Signin successful',
-      user: {
-        name: user.name,
-        email: user.email,
-        country: user.country,
-        state: user.state,
-        city: user.city,
-        whatsapp: user.whatsapp
-      }
-    });
+  message: "Signin successful",
+  token,
+  user: {
+    name: user.name,
+    email: user.email,
+    country: user.country,
+    state: user.state,
+    city: user.city,
+    whatsapp: user.whatsapp
+  }
+});
+
 
   } catch (err) {
     console.error(err);
